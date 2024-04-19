@@ -23,7 +23,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-def read(filepath: str | Path) -> list[LabelImage]:
+def from_file(filepath: str | Path) -> list[LabelImage]:
     label_images = []
     with open(filepath, "r") as file:
         data = json.load(file)
@@ -84,7 +84,7 @@ def from_dir(
         return
 
     image_paths = __get_files_with_extensions(img_dir, {".jpg", ".jpeg", ".png"})
-    label_paths = __get_files_with_extensions(label_dir, set(parser.file_extension))
+    label_paths = __get_files_with_extensions(label_dir, {parser.file_extension})
     pairs = __join_label_and_image_files(image_paths, label_paths)
 
     for img_path, label_path in pairs:

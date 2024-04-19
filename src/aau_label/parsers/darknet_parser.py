@@ -11,7 +11,7 @@ from .protocol import LabelParser
 
 
 class DarknetParser(LabelParser):
-    file_extension = "txt"
+    file_extension = ".txt"
 
     def __init__(self):
         self.current_directory: Optional[str] = None

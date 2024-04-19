@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import ClassVar, List
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, ParseError
 
@@ -20,7 +20,7 @@ class BoundingBox:
 
 
 class PascalParser(LabelParser):
-    file_extension = "xml"
+    file_extension = ".xml"
 
     def parse(self, label_file: str, image: Image) -> List[Label]:
         root = ElementTree.parse(label_file).getroot()
