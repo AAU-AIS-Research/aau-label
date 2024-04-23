@@ -1,19 +1,22 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Sequence
+
+from .protocols import Label
 
 
 @dataclass
-class Label:
+class AAULabel:
     x: int
     y: int
     width: int
     height: int
-    classifier: str
+    name: str
 
 
 @dataclass
-class LabelImage:
-    path: str
+class AAULabelImage:
+    path: Path
     width: int
     height: int
     labels: Sequence[Label]

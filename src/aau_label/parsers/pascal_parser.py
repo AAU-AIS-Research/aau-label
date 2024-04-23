@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import ClassVar, List
+from pathlib import Path
+from typing import List
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, ParseError
 
@@ -7,8 +8,8 @@ from PIL.Image import Image
 
 from aau_label.errors import PascalParseError
 
-from ..model import Label
-from .protocol import LabelParser
+from ..model import AAULabel
+from ..protocols import Label, LabelParser
 
 
 @dataclass
@@ -22,7 +23,7 @@ class BoundingBox:
 class PascalParser(LabelParser):
     file_extension = ".xml"
 
-    def parse(self, label_file: str, image: Image) -> List[Label]:
+    def parse(self, label_file: Path, image: Image) -> List[Label]:
         root = ElementTree.parse(label_file).getroot()
         try:
             return [
@@ -41,7 +42,7 @@ class PascalParser(LabelParser):
             elif child.tag == "bndbox":
                 bounding_box = self.__parse_bounding_box(child)
 
-        return Label(
+        return AAULabel(
             bounding_box.xmin,
             bounding_box.ymin,
             bounding_box.xmax - bounding_box.xmin,

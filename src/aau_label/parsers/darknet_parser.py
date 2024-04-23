@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import List, Optional
 
 from PIL.Image import Image
 
 from ..errors import ClassFileNotFoundError
-from ..model import Label
-from .protocol import LabelParser
+from ..model import AAULabel
+from ..protocols import Label, LabelParser
 
 
 class DarknetParser(LabelParser):
@@ -26,9 +27,9 @@ class DarknetParser(LabelParser):
         x = round(float(x) * img_width - width / 2)
         y = round(float(y) * img_height - height / 2)
 
-        return Label(x, y, width, height, self.label_map[class_index])
+        return AAULabel(x, y, width, height, self.label_map[class_index])
 
-    def parse(self, label_file: str, image: Image) -> List[Label]:
+    def parse(self, label_file: Path, image: Image) -> List[Label]:
         self.__load_class_file(label_file)
 
         with open(label_file, "r") as file:
@@ -39,7 +40,7 @@ class DarknetParser(LabelParser):
             except ValueError:
                 raise ValueError(f"Badly formatted label file: {label_file}")
 
-    def __load_class_file(self, label_file: str):
+    def __load_class_file(self, label_file: Path):
         filepath, _ = os.path.split(label_file)
 
         if self.current_directory == filepath:
