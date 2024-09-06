@@ -197,19 +197,21 @@ def to_dataframe(label_images: Sequence[LabelImage]) -> DataFrame:
     return DataFrame(rows)
 
 
+
 def from_dataframe(df: DataFrame) -> Iterable[LabelImage]:
-    for (path, width, height), group in df.groupby(
+    group_by = df.groupby(
         ["path", "image_width", "image_height"]
-    ):
+    )
+    for (path, width, height), group in group_by: # type: ignore
         labels: Sequence[Label] = [
             AAULabel(
-                label["x"],
-                label["y"],
-                label["label_width"],
-                label["label_height"],
-                label["classifier"],
+                label["x"], # type: ignore
+                label["y"], # type: ignore
+                label["label_width"], # type: ignore
+                label["label_height"], # type: ignore
+                label["classifier"], # type: ignore
             )
             for _, label in group.iterrows()
         ]
 
-        yield AAULabelImage(path, width, height, labels)
+        yield AAULabelImage(path, width, height, labels) # type: ignore
