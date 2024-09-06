@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import List, Optional
 
 from PIL.Image import Image
+from typing_extensions import deprecated
 
 from ..errors import ClassFileNotFoundError
 from ..model import AAULabel
 from ..protocols import Label, LabelParser
 
 
+@deprecated("Use aau_label.io.Darknet instead")
 class DarknetParser(LabelParser):
     file_extension = ".txt"
 

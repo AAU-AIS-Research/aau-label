@@ -37,3 +37,11 @@ class COCOInfo:
     contributor: str
     url: str
     date_created: str
+
+
+@dataclass
+class BoundingBox:
+    xmin: int
+    ymin: int
+    xmax: int
+    ymax: int

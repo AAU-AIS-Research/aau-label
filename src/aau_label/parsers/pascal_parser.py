@@ -5,6 +5,7 @@ from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, ParseError
 
 from PIL.Image import Image
+from typing_extensions import deprecated
 
 from aau_label.errors import PascalParseError
 
@@ -20,6 +21,7 @@ class BoundingBox:
     ymax: int
 
 
+@deprecated("Use aau_label.io.Pascal instead")
 class PascalParser(LabelParser):
     file_extension = ".xml"
 

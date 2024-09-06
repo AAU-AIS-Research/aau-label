@@ -1,25 +1,17 @@
-from __future__ import annotations
-
-import json
-from pathlib import Path
-from typing import TYPE_CHECKING, Iterable
-
-from pandas import DataFrame
-from PIL import Image as PILImage
-
-from .errors import LabelError
-from .model import AAULabel, AAULabelImage, COCOInfo, COCOLicense
-from .parsers import DarknetParser, PascalParser
-from .protocols import Label, LabelImage
-
-if TYPE_CHECKING:
-    from typing import Any, Dict, Sequence
-    from PIL.Image import Image
-    from .protocols import LabelParser
-
 import dataclasses
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Iterable, Sequence
+
+from pandas import DataFrame
+
+from . import utilities
+from .errors import LabelError
+from .io import Darknet, Pascal
+from .model import AAULabel, AAULabelImage, COCOInfo, COCOLicense
+from .protocols import Label, LabelImage, LabelImageDeserializer
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +66,7 @@ def __join_label_and_image_files(
 def from_dir(
     img_dir: str | Path,
     label_dir: str | Path,
-    parser: LabelParser,
+    deserializer: LabelImageDeserializer,
 ) -> Iterable[LabelImage]:
     if isinstance(img_dir, str):
         img_dir = Path(img_dir)
@@ -85,38 +77,38 @@ def from_dir(
         return
 
     image_paths = __get_files_with_extensions(img_dir, {".jpg", ".jpeg", ".png"})
-    label_paths = __get_files_with_extensions(label_dir, {parser.file_extension})
+    label_paths = __get_files_with_extensions(label_dir, {deserializer.file_extension})
     pairs = __join_label_and_image_files(image_paths, label_paths)
 
     for img_path, label_path in pairs:
-        image: Image = PILImage.open(img_path)
-        width, height = image.size
-        labels: Sequence[Label] = []
-
         try:
-            labels = parser.parse(label_path, image)
+            yield deserializer.deserialize(img_path, label_path)
         except (FileNotFoundError, ValueError, LabelError) as error:
             logger.warning(error)
-        else:
-            yield AAULabelImage(img_path, width, height, labels)
 
 
 def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterable[LabelImage]:
-    return from_dir(img_dir, label_dir, PascalParser())
+    return from_dir(img_dir, label_dir, Pascal(label_dir))
 
 
 def from_darknet_dir(
     img_dir: str | Path, label_dir: str | Path
 ) -> Iterable[LabelImage]:
-    return from_dir(img_dir, label_dir, DarknetParser())
+    if isinstance(label_dir, str):
+        label_dir = Path(label_dir)
+
+    class_file = label_dir.joinpath("classes.txt")
+    classes = Darknet.load_class_file(class_file)
+    return from_dir(img_dir, label_dir, Darknet(classes))
 
 
 def write(filepath: str | Path, label_images: Iterable[LabelImage]) -> None:
+    label_image_dicts = map(utilities.label_image_to_dict, label_images)
     with open(filepath, "w") as file:
-        json.dump(label_images, file, indent=2)
+        json.dump(list(label_image_dicts), file, indent=2)
 
 
-def __get_unique_classifiers(label_images: Iterable[LabelImage]) -> Dict[str, int]:
+def __get_unique_classifiers(label_images: Iterable[LabelImage]) -> dict[str, int]:
     classifiers = set()
     for label_image in label_images:
         classifiers.update(label.name for label in label_image.labels)
@@ -125,7 +117,7 @@ def __get_unique_classifiers(label_images: Iterable[LabelImage]) -> Dict[str, in
 
 def to_coco(
     label_images: Iterable[LabelImage], license: COCOLicense, info: COCOInfo
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     logger.info("Extracting unique labels from LabelImage objects")
     classifier_db = __get_unique_classifiers(label_images)
 
@@ -197,21 +189,18 @@ def to_dataframe(label_images: Sequence[LabelImage]) -> DataFrame:
     return DataFrame(rows)
 
 
-
 def from_dataframe(df: DataFrame) -> Iterable[LabelImage]:
-    group_by = df.groupby(
-        ["path", "image_width", "image_height"]
-    )
-    for (path, width, height), group in group_by: # type: ignore
+    group_by = df.groupby(["path", "image_width", "image_height"])
+    for (path, width, height), group in group_by:  # type: ignore
         labels: Sequence[Label] = [
             AAULabel(
-                label["x"], # type: ignore
-                label["y"], # type: ignore
-                label["label_width"], # type: ignore
-                label["label_height"], # type: ignore
-                label["classifier"], # type: ignore
+                label["x"],  # type: ignore
+                label["y"],  # type: ignore
+                label["label_width"],  # type: ignore
+                label["label_height"],  # type: ignore
+                label["classifier"],  # type: ignore
             )
             for _, label in group.iterrows()
         ]
 
-        yield AAULabelImage(path, width, height, labels) # type: ignore
+        yield AAULabelImage(path, width, height, labels)  # type: ignore
