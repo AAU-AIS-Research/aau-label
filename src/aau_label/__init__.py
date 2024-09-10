@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Iterator, Sequence
 
 from pandas import DataFrame
 
@@ -76,7 +76,7 @@ def from_dir(
     img_dir: str | Path,
     label_dir: str | Path,
     deserializer: LabelImageDeserializer,
-) -> Iterable[LabelImage]:
+) -> Iterator[LabelImage]:
     """
     Generate an iterable of LabelImage objects from a directory containing images and labels.
 
@@ -104,7 +104,7 @@ def from_dir(
         yield deserializer.deserialize(img_path, label_path)
 
 
-def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterable[LabelImage]:
+def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterator[LabelImage]:
     """
     Generate an iterable of LabelImage objects from a directory containing images and labels in Pascal VOC format.
 
@@ -122,7 +122,7 @@ def from_darknet_dir(
     img_dir: str | Path,
     label_dir: str | Path,
     class_file: str | Path | None = None,
-) -> Iterable[LabelImage]:
+) -> Iterator[LabelImage]:
     """
     Generate an iterable of LabelImage objects from a directory containing images and labels in Darknet format.
 

@@ -1,6 +1,6 @@
 [project]
 name = "aau-label"
-version = "0.3.3"
+version = "0.3.4"
 description = "A image labeling handler"
 authors = [
     {name = "Kasper Fromm Pedersen", email = "kasperfromm@protonmail.com"},
