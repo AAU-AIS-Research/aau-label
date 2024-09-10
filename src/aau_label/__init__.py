@@ -16,6 +16,23 @@ from .protocols import Label, LabelImage, LabelImageDeserializer
 logger = logging.getLogger(__name__)
 
 
+class DeserializedLabelImageIterator(Iterator[LabelImage]):
+    def __init__(
+        self,
+        img_label_pairs: Iterator[tuple[Path, Path]],
+        deserializer: LabelImageDeserializer,
+    ) -> None:
+        self.__pairs = img_label_pairs
+        self.__deserializer = deserializer
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> LabelImage:
+        img_path, label_path = next(self.__pairs)
+        return self.__deserializer.deserialize(img_path, label_path)
+
+
 def from_file(filepath: str | Path) -> list[LabelImage]:
     """
     Loads a list of LabelImage objects from a AAU JSON file.
@@ -55,7 +72,7 @@ def from_file(filepath: str | Path) -> list[LabelImage]:
 
 def __get_files_with_extensions(
     directory: Path, extensions: set[str]
-) -> Iterable[Path]:
+) -> Iterator[Path]:
     for file in directory.iterdir():
         if file.suffix.lower() in extensions:
             yield file
@@ -63,7 +80,7 @@ def __get_files_with_extensions(
 
 def __join_label_and_image_files(
     images: Iterable[Path], labels: Iterable[Path]
-) -> Iterable[tuple[Path, Path]]:
+) -> Iterator[tuple[Path, Path]]:
     lookup = {path.stem: path for path in images}
     for label_path in labels:
         img_path = lookup.get(label_path.stem)
@@ -94,14 +111,13 @@ def from_dir(
         label_dir = Path(label_dir)
 
     if not img_dir.exists() or not label_dir.exists():
-        return
+        return DeserializedLabelImageIterator(iter([]), deserializer)
 
     image_paths = __get_files_with_extensions(img_dir, {".jpg", ".jpeg", ".png"})
     label_paths = __get_files_with_extensions(label_dir, {deserializer.file_extension})
     pairs = __join_label_and_image_files(image_paths, label_paths)
 
-    for img_path, label_path in pairs:
-        yield deserializer.deserialize(img_path, label_path)
+    return DeserializedLabelImageIterator(pairs, deserializer)
 
 
 def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterator[LabelImage]:
