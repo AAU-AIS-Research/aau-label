@@ -38,8 +38,8 @@ class Pascal(LabelImageDeserializer, LabelImageSerializer):
         return self.__prettify(annotation)
 
     def __deserialize(self, image_file: Path, label_file: Path, image: Image):
-        root = ElementTree.parse(label_file).getroot()
         try:
+            root = ElementTree.parse(label_file).getroot()
             width, height = image.size
             labels = [
                 self.__parse_object(child) for child in root if child.tag == "object"

@@ -4,12 +4,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Sequence
-from xml.etree.ElementTree import ParseError as XMLParseError
 
 from pandas import DataFrame
 
 from . import utilities
-from .errors import ClassFileNotFoundError, LabelError
+from .errors import ClassFileNotFoundError
 from .io import Darknet, Pascal
 from .model import AAULabel, AAULabelImage, COCOInfo, COCOLicense
 from .protocols import Label, LabelImage, LabelImageDeserializer
@@ -102,10 +101,7 @@ def from_dir(
     pairs = __join_label_and_image_files(image_paths, label_paths)
 
     for img_path, label_path in pairs:
-        try:
-            yield deserializer.deserialize(img_path, label_path)
-        except (FileNotFoundError, ValueError, LabelError, XMLParseError) as error:
-            logger.error(error)
+        yield deserializer.deserialize(img_path, label_path)
 
 
 def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterable[LabelImage]:

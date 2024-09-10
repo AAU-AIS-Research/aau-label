@@ -6,7 +6,7 @@ import PIL
 import PIL.Image
 from PIL.Image import Image
 
-from ..errors import ClassFileNotFoundError
+from ..errors import ClassFileNotFoundError, DarknetParseError
 from ..model import AAULabel, AAULabelImage
 from ..protocols import Label, LabelImage, LabelImageDeserializer, LabelImageSerializer
 
@@ -51,7 +51,7 @@ class Darknet(LabelImageDeserializer, LabelImageSerializer):
                 labels = [self.__parse_row(row, width, height) for row in file]
                 return AAULabelImage(image_file, width, height, labels)
             except ValueError:
-                raise ValueError(f"Badly formatted label file: {label_file}")
+                raise DarknetParseError(label_file)
 
     def deserialize(
         self, image_file: Path, label_file: Path, image: Image | None = None
