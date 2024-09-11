@@ -65,7 +65,7 @@ def from_file(filepath: str | Path) -> list[LabelImage]:
                 labels.append(label)
 
             label_image = AAULabelImage(
-                path=element["path"],
+                path=Path(element["path"]),
                 width=element["width"],
                 height=element["height"],
                 labels=labels,
@@ -329,5 +329,9 @@ def from_dataframe(df: DataFrame) -> Iterable[LabelImage]:
             )
             for _, label in group.iterrows()
         ]
-
-        yield AAULabelImage(path, width, height, labels)  # type: ignore
+        yield AAULabelImage(
+            Path(path),
+            width,
+            height,
+            labels,
+        )  # type: ignore
