@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Sequence
+from typing import Any, Iterable, Iterator, Sequence, cast
 
 from pandas import DataFrame
 
@@ -46,17 +46,21 @@ def from_file(filepath: str | Path) -> list[LabelImage]:
     """
     label_images = []
     with open(filepath, "r") as file:
-        data = json.load(file)
+        data: list[dict[str, Any]] = json.load(file)
 
         for element in data:
             labels: list[Label] = []
             for label_dict in element["labels"]:
+                label_dict = cast(dict[str, Any], label_dict)
+                # Old format uses classifier, new format uses name
+                label_name = label_dict.get("classifier", label_dict["name"])
+
                 label = AAULabel(
                     label_dict["x"],
                     label_dict["y"],
                     label_dict["width"],
                     label_dict["height"],
-                    label_dict["classifier"],
+                    label_name,
                 )
                 labels.append(label)
 
@@ -305,7 +309,15 @@ def from_dataframe(df: DataFrame) -> Iterable[LabelImage]:
     Returns:
     Iterable[LabelImage]: An iterable of LabelImage objects.
     """
+
+    # Old format uses 'classifier', new format uses 'name'
+    if "classifier" in df:
+        label_name = "classifier"
+    else:
+        label_name = "name"
+
     group_by = df.groupby(["path", "image_width", "image_height"])
+
     for (path, width, height), group in group_by:  # type: ignore
         labels: Sequence[Label] = [
             AAULabel(
@@ -313,7 +325,7 @@ def from_dataframe(df: DataFrame) -> Iterable[LabelImage]:
                 label["y"],  # type: ignore
                 label["label_width"],  # type: ignore
                 label["label_height"],  # type: ignore
-                label["classifier"],  # type: ignore
+                label[label_name],  # type: ignore
             )
             for _, label in group.iterrows()
         ]
