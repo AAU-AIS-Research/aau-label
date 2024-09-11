@@ -7,8 +7,9 @@ from typing import Any, Iterable, Iterator, Sequence
 
 from pandas import DataFrame
 
+from aau_label.errors import ClassFileNotFoundError
+
 from . import utilities
-from .errors import ClassFileNotFoundError
 from .io import Darknet, Pascal
 from .model import AAULabel, AAULabelImage, COCOInfo, COCOLicense
 from .protocols import Label, LabelImage, LabelImageDeserializer
@@ -95,7 +96,7 @@ def from_dir(
     deserializer: LabelImageDeserializer,
 ) -> Iterator[LabelImage]:
     """
-    Generate an iterable of LabelImage objects from a directory containing images and labels.
+    Generate an iterator of LabelImage objects from a directory containing images and labels.
 
     Args:
         img_dir: The directory containing the images.
@@ -103,7 +104,7 @@ def from_dir(
         deserializer: A LabelImageDeserializer instance used to deserialize the label files.
 
     Returns:
-        An iterable of LabelImage objects.
+        Iterator[LabelImage]: Iterator over LabelImage instances.
     """
     if isinstance(img_dir, str):
         img_dir = Path(img_dir)
@@ -122,14 +123,14 @@ def from_dir(
 
 def from_pascal_dir(img_dir: str | Path, label_dir: str | Path) -> Iterator[LabelImage]:
     """
-    Generate an iterable of LabelImage objects from a directory containing images and labels in Pascal VOC format.
+    Generate an iterator of LabelImage objects from a directory containing images and labels in Pascal VOC format.
 
     Args:
         img_dir: The directory containing the images.
         label_dir: The directory containing the labels.
 
     Returns:
-        An iterable of LabelImage objects.
+        Iterator[LabelImage]: Iterator over LabelImage instances.
     """
     return from_dir(img_dir, label_dir, Pascal(label_dir))
 
@@ -138,17 +139,21 @@ def from_darknet_dir(
     img_dir: str | Path,
     label_dir: str | Path,
     class_file: str | Path | None = None,
+    strict: bool = False,
 ) -> Iterator[LabelImage]:
     """
-    Generate an iterable of LabelImage objects from a directory containing images and labels in Darknet format.
+    Load Darknet format labels and images from directories.
 
     Args:
-        img_dir (str | Path): The directory containing the images.
-        label_dir (str | Path): The directory containing the labels.
-        class_file (str | Path | None, optional): The path to the class file. If not provided, it will be inferred from the label directory.
+        img_dir (str | Path): Directory containing image files.
+        label_dir (str | Path): Directory containing Darknet format label files.
+        class_file (str | Path | None, optional): Path to the class file. If not provided,
+            attempts to find 'classes.txt', 'names.txt', or '.names' in the label directory.
+        strict (bool, optional): If True, raise an error if no class file is found.
+            Otherwise returns an empty iterator.
 
     Returns:
-        Iterable[LabelImage]: An iterable of LabelImage objects.
+        Iterator[LabelImage]: Iterator over LabelImage instances.
     """
     if isinstance(label_dir, str):
         label_dir = Path(label_dir)
@@ -161,8 +166,12 @@ def from_darknet_dir(
             class_file = label_dir.joinpath(candidate)
             if class_file.exists():
                 break
-        else:
-            raise ClassFileNotFoundError(label_dir)
+
+    if class_file is None or not class_file.exists():
+        if strict:
+            raise ClassFileNotFoundError(label_dir.as_posix() + " | ".join(candidates))
+        logger.debug("No Darknet class file found.")
+        return iter([])
 
     classes = Darknet.load_class_file(class_file)
     return from_dir(img_dir, label_dir, Darknet(classes))

@@ -8,7 +8,7 @@ class DeserializerError(Exception):
 
 class ClassFileNotFoundError(DeserializerError):
     def __init__(self, path: Path | str) -> None:
-        super().__init__(f"Could now find {path}")
+        super().__init__(f"Could not find {path}")
 
 
 class PascalParseError(DeserializerError):
